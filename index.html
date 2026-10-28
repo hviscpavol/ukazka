@@ -1,0 +1,450 @@
+<!doctype html><html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ukážka reportingu – Sellect Consulting</title>
+<meta name="description" content="Ukážka mesačného manažérskeho reportu pre firmu s obratom 1–10 mil. € – Sellect Consulting">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--font-anthropic-sans:Inter,system-ui,sans-serif;--font-anthropic-serif:"Source Serif 4",Georgia,serif;
+--color-fg:#1d1f23;--color-fg-muted:#6b6f76;--color-bg:#f6f5f2;--color-panel:#fff;--color-border-line:#e4e2dc;
+--color-ok:#1f7a4d;--color-warn:#a86400;--color-bad:#c0392b;
+--cds-font-size-caption:.8rem;--cds-font-size-body:.95rem;--cds-font-size-heading:1.05rem;--cds-font-size-title:2rem;--cds-font-weight-medium:600;
+--cds-gap-xs:.25rem;--cds-gap-sm:.5rem;--cds-gap-md:1rem;--cds-gap-lg:1.5rem;--cds-gap-xl:2.25rem;
+--cds-pad-xs:.25rem;--cds-pad-sm:.5rem;--cds-pad-lg:1.25rem;--cds-radius:10px;
+--cds-chart-grid:#ecebe7;--cds-chart-axis:#c9c6bf;--cds-chart-reference:#3a3d42;--cds-chart-muted:#c9c6bf;--cds-chart-status-critical:#d0503f;
+--cds-surface-popover:#fff;--cds-border:#e4e2dc;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.12);--cds-text-secondary:#6b6f76;--cds-dur-slow:.3s}
+@media (prefers-color-scheme:dark){:root{--color-fg:#ecebe7;--color-fg-muted:#a3a19b;--color-bg:#16171a;--color-panel:#1f2024;--color-border-line:#33353a;
+--color-ok:#5cc28c;--color-bad:#ef7a6c;--cds-chart-grid:#2b2d31;--cds-chart-axis:#4a4c52;--cds-chart-reference:#e6e4de;--cds-chart-muted:#4f5157;--cds-chart-status-critical:#e8705f;
+--cds-surface-popover:#26282c;--cds-border:#3a3c41;--cds-text-secondary:#a3a19b}}
+html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans)}
+#dash-root{padding:clamp(16px,4vw,48px)}
+.dash-skeleton{color:transparent!important}
+.sv-cta a{color:inherit}
+</style>
+<script>
+(function(){
+const DS={"mesacne": [{"mesiac": "2026-01", "trzby": "352000", "trzby_plan": "380000", "hruba_marza": "95000", "ebitda": "-1000", "ebitda_plan": "22000", "hotovost": "412000"}, {"mesiac": "2026-02", "trzby": "398000", "trzby_plan": "410000", "hruba_marza": "111000", "ebitda": "14000", "ebitda_plan": "27000", "hotovost": "388000"}, {"mesiac": "2026-03", "trzby": "521000", "trzby_plan": "500000", "hruba_marza": "151000", "ebitda": "53000", "ebitda_plan": "45000", "hotovost": "351000"}, {"mesiac": "2026-04", "trzby": "512000", "trzby_plan": "540000", "hruba_marza": "133000", "ebitda": "34000", "ebitda_plan": "50000", "hotovost": "366000"}, {"mesiac": "2026-05", "trzby": "603000", "trzby_plan": "580000", "hruba_marza": "169000", "ebitda": "69000", "ebitda_plan": "58000", "hotovost": "402000"}, {"mesiac": "2026-06", "trzby": "574000", "trzby_plan": "600000", "hruba_marza": "144000", "ebitda": "43000", "ebitda_plan": "61000", "hotovost": "371000"}, {"mesiac": "2026-07", "trzby": "498000", "trzby_plan": "560000", "hruba_marza": "115000", "ebitda": "13000", "ebitda_plan": "52000", "hotovost": "318000"}, {"mesiac": "2026-08", "trzby": "541000", "trzby_plan": "520000", "hruba_marza": "141000", "ebitda": "38000", "ebitda_plan": "45000", "hotovost": "334000"}, {"mesiac": "2026-09", "trzby": "566000", "trzby_plan": "610000", "hruba_marza": "136000", "ebitda": "32000", "ebitda_plan": "63000", "hotovost": "287000"}], "zakazky": [{"zakazka": "Z-2601 Hala Senec", "segment": "Výroba a montáž", "trzby": "842000", "naklady": "611000", "marza": "231000", "marza_pct": "0.2743"}, {"zakazka": "Z-2604 Bytový dom Trnava", "segment": "Stavebné práce", "trzby": "1120000", "naklady": "948000", "marza": "172000", "marza_pct": "0.1536"}, {"zakazka": "Z-2607 Rekonštrukcia školy", "segment": "Stavebné práce", "trzby": "615000", "naklady": "571000", "marza": "44000", "marza_pct": "0.0715"}, {"zakazka": "Z-2611 Oceľové konštrukcie Brno", "segment": "Výroba a montáž", "trzby": "498000", "naklady": "342000", "marza": "156000", "marza_pct": "0.3133"}, {"zakazka": "Z-2615 Logistický areál", "segment": "Výroba a montáž", "trzby": "731000", "naklady": "559000", "marza": "172000", "marza_pct": "0.2353"}, {"zakazka": "Z-2618 Servis a údržba", "segment": "Servis", "trzby": "286000", "naklady": "171000", "marza": "115000", "marza_pct": "0.4021"}, {"zakazka": "Z-2620 Obchodné centrum", "segment": "Stavebné práce", "trzby": "574000", "naklady": "602000", "marza": "-28000", "marza_pct": "-0.0488"}, {"zakazka": "Z-2623 Fasáda administratívy", "segment": "Stavebné práce", "trzby": "302000", "naklady": "247000", "marza": "55000", "marza_pct": "0.1821"}], "cashflow": [{"tyzden": "2026-10-05", "prijmy": "118000", "vydavky": "104000", "zostatok": "301000"}, {"tyzden": "2026-10-12", "prijmy": "96000", "vydavky": "131000", "zostatok": "266000"}, {"tyzden": "2026-10-19", "prijmy": "142000", "vydavky": "118000", "zostatok": "290000"}, {"tyzden": "2026-10-26", "prijmy": "88000", "vydavky": "126000", "zostatok": "252000"}, {"tyzden": "2026-11-02", "prijmy": "131000", "vydavky": "109000", "zostatok": "274000"}, {"tyzden": "2026-11-09", "prijmy": "74000", "vydavky": "141000", "zostatok": "207000"}, {"tyzden": "2026-11-16", "prijmy": "152000", "vydavky": "117000", "zostatok": "242000"}, {"tyzden": "2026-11-23", "prijmy": "109000", "vydavky": "98000", "zostatok": "253000"}, {"tyzden": "2026-11-30", "prijmy": "95000", "vydavky": "133000", "zostatok": "215000"}, {"tyzden": "2026-12-07", "prijmy": "138000", "vydavky": "112000", "zostatok": "241000"}, {"tyzden": "2026-12-14", "prijmy": "82000", "vydavky": "124000", "zostatok": "199000"}, {"tyzden": "2026-12-21", "prijmy": "127000", "vydavky": "101000", "zostatok": "225000"}, {"tyzden": "2026-12-28", "prijmy": "116000", "vydavky": "119000", "zostatok": "222000"}], "pohladavky": [{"poradie": "1", "kategoria": "V splatnosti", "suma": "412000"}, {"poradie": "2", "kategoria": "1–30 dní po", "suma": "186000"}, {"poradie": "3", "kategoria": "31–60 dní po", "suma": "94000"}, {"poradie": "4", "kategoria": "61–90 dní po", "suma": "51000"}, {"poradie": "5", "kategoria": "Viac ako 90 dní", "suma": "38000"}]};
+const calcs={};const subs=[];
+window.dash={colors:["#2f6fdf","#d38a2f","#3f9e6e","#8a5cd1","#c64b74","#3aa0b0","#9a8f2a","#6b7380"],
+ calc:(id,o)=>{calcs[id]=o;},
+ data:(id)=>{if(DS[id])return{status:"ok",data:DS[id]};const c=calcs[id];if(c)return{status:"ok",data:c.fn(...c.inputs.map(i=>dash.data(i).data))};return{status:"missing",data:[]};},
+ onData:(fn)=>{subs.push(fn);}};
+let w=0;const run=()=>subs.forEach(f=>f());
+window.addEventListener("load",()=>{run();w=innerWidth;});
+window.addEventListener("resize",()=>{if(innerWidth!==w){w=innerWidth;run();}});
+})();
+</script></head><body><div id="dash-root">
+<style>
+.sv { max-width: 72rem; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.sv-eyebrow { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .02em; margin: 0 0 var(--cds-gap-xs); }
+.sv-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); line-height: 1.2; }
+.sv-take { font-size: var(--cds-font-size-body); margin: 0 0 var(--cds-gap-lg); max-width: 46rem; line-height: 1.5; }
+.sv-take b { font-weight: 600; }
+.sv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-xl); }
+.sv-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.sv-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-xs); }
+.sv-kpi-val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin: 0 0 var(--cds-gap-xs); line-height: 1.1; }
+.sv-kpi-delta { font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; margin: 0; }
+.sv-good { color: var(--color-ok); } .sv-bad { color: var(--color-bad); } .sv-muted { color: var(--color-fg-muted); }
+.sv-h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: var(--cds-gap-xl) 0 var(--cds-gap-md); }
+.sv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+.sv-ct { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+.sv-cn { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 var(--cds-gap-md); }
+.sv-chart { position: relative; min-height: 240px; }
+.sv-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-sm); }
+.sv-sw { display: inline-block; width: .75rem; height: .75rem; border-radius: 2px; margin-right: .35rem; vertical-align: -1px; }
+.sv-sw-line { height: 2px; vertical-align: 3px; }
+.sv-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; z-index: 2; }
+.sv-tip .t { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.sv-tablewrap { overflow-x: auto; }
+.sv-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+.sv-table th { text-align: left; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.sv-table td { padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: middle; }
+.sv-table .num { text-align: right; }
+.sv-table tr.loss td { color: var(--color-bad); }
+.sv-bar { display: flex; align-items: center; gap: var(--cds-gap-sm); justify-content: flex-end; }
+.sv-bar span.b { display: inline-block; height: .5rem; border-radius: 4px; }
+@media (max-width: 40rem) { .sv-hide-n { display: none; } .sv-bar span.b { display: none; } .sv-table { font-size: var(--cds-font-size-caption); } .sv-table td, .sv-table th { padding-inline: 4px; } }
+.sv-table td.num { white-space: nowrap; }
+.sv-cta { margin-top: var(--cds-gap-xl); }
+.sv-cta p { margin: 0 0 var(--cds-gap-sm); line-height: 1.5; }
+.sv-cta .sv-ct { font-family: var(--font-anthropic-serif); font-weight: 400; }
+.sv-fail { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 240px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.sv-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+[data-dash-source-state=empty] { color: transparent; }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+</style>
+
+<div class="sv">
+  <p class="sv-eyebrow">Ukážka na vymyslených dátach · Sellect Consulting</p>
+  <h1 class="sv-title" id="top">Mesačný manažérsky report — september 2026</h1>
+  <p class="sv-take" id="takeaway">
+    Tržby za 9 mesiacov sú <b data-source="kpi" data-field="trzby_gap_txt" class="dash-skeleton">—</b>, ale EBITDA zaostáva o <b data-source="kpi" data-field="ebitda_gap_txt" class="dash-skeleton">—</b>.
+    Zarába sa menej na každom eure tržieb a hotovosť klesá: podľa výhľadu padne pod limit 200 tis. € v týždni od <b data-source="cf_min" data-field="tyzden_txt" class="dash-skeleton">—</b>.
+  </p>
+
+  <div class="sv-kpis">
+    <div class="sv-card">
+      <p class="sv-kpi-label">Tržby · jan–sep 2026</p>
+      <p class="sv-kpi-val dash-skeleton" data-source="kpi" data-field="trzby_ytd_txt">—</p>
+      <p class="sv-kpi-delta dash-skeleton" id="d-trzby" data-source="kpi" data-field="trzby_vs_plan_txt">—</p>
+    </div>
+    <div class="sv-card">
+      <p class="sv-kpi-label">EBITDA · jan–sep 2026</p>
+      <p class="sv-kpi-val dash-skeleton" data-source="kpi" data-field="ebitda_ytd_txt">—</p>
+      <p class="sv-kpi-delta dash-skeleton" id="d-ebitda" data-source="kpi" data-field="ebitda_vs_plan_txt">—</p>
+    </div>
+    <div class="sv-card">
+      <p class="sv-kpi-label">Hrubá marža · jan–sep 2026</p>
+      <p class="sv-kpi-val dash-skeleton" data-source="kpi" data-field="hm_pct_txt">—</p>
+      <p class="sv-kpi-delta dash-skeleton" id="d-hm" data-source="kpi" data-field="hm_q3_txt">—</p>
+    </div>
+    <div class="sv-card">
+      <p class="sv-kpi-label">Hotovosť · k 30. 9. 2026</p>
+      <p class="sv-kpi-val dash-skeleton" data-source="kpi" data-field="hotovost_txt">—</p>
+      <p class="sv-kpi-delta dash-skeleton" id="d-cash" data-source="kpi" data-field="hotovost_zmena_txt">—</p>
+    </div>
+  </div>
+
+  <h2 class="sv-h2" id="plan">Plán vs. skutočnosť</h2>
+  <div class="sv-grid">
+    <div class="sv-card">
+      <p class="sv-ct">Tržby po mesiacoch</p>
+      <p class="sv-cn">Stĺpec = skutočnosť, čiarka = plán. Červené mesiace sú pod plánom.</p>
+      <div class="sv-chart dash-skeleton" id="ch-trzby" data-source="mesacne"></div>
+      <div class="sv-legend"><span><i class="sv-sw" id="lg-a"></i>Skutočnosť</span><span><i class="sv-sw sv-sw-line" style="background: var(--cds-chart-reference)"></i>Plán</span></div>
+    </div>
+    <div class="sv-card">
+      <p class="sv-ct">EBITDA po mesiacoch</p>
+      <p class="sv-cn">Prevádzkový zisk pred odpismi. Čiarka = plán.</p>
+      <div class="sv-chart dash-skeleton" id="ch-ebitda" data-source="mesacne"></div>
+      <div class="sv-legend"><span><i class="sv-sw" id="lg-b"></i>Skutočnosť</span><span><i class="sv-sw sv-sw-line" style="background: var(--cds-chart-reference)"></i>Plán</span></div>
+    </div>
+  </div>
+
+  <h2 class="sv-h2" id="zakazky">Ziskovosť zákaziek</h2>
+  <div class="sv-card">
+    <p class="sv-ct">Kde firma reálne zarába</p>
+    <p class="sv-cn">Kumulatívne od začiatku zákazky. Zákazka v strate je červená.</p>
+    <div class="sv-tablewrap">
+      <table class="sv-table" id="tb-zak" data-source="zakazky" data-row-key="zakazka">
+        <thead><tr>
+          <th data-field="zakazka">Zákazka</th>
+          <th data-field="segment" class="sv-hide-n">Segment</th>
+          <th data-field="trzby" class="num">Tržby</th>
+          <th data-field="naklady" class="num sv-hide-n">Náklady</th>
+          <th data-field="marza" class="num">Marža</th>
+          <th data-field="marza_pct" class="num">Marža %</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 class="sv-h2" id="cash">Hotovosť a pohľadávky</h2>
+  <div class="sv-grid">
+    <div class="sv-card">
+      <p class="sv-ct">Výhľad hotovosti na 13 týždňov</p>
+      <p class="sv-cn">Zostatok na účtoch na konci týždňa. Prerušovaná čiara = minimálna rezerva 200 tis. €.</p>
+      <div class="sv-chart dash-skeleton" id="ch-cf" data-source="cashflow"></div>
+    </div>
+    <div class="sv-card">
+      <p class="sv-ct">Pohľadávky podľa splatnosti</p>
+      <p class="sv-cn">Nezaplatené faktúry odberateľov k 30. 9. 2026.</p>
+      <div class="sv-chart dash-skeleton" id="ch-ar" data-source="pohladavky"></div>
+    </div>
+  </div>
+
+  <div class="sv-card sv-cta" id="kontakt">
+    <p class="sv-ct">Takto môže vyzerať váš reporting</p>
+    <p>Na vašich dátach z existujúceho účtovníctva, každý mesiac do 10. dňa. Bez nového softvéru a bez interného controllera.</p>
+    <p class="sv-muted">Ing. Pavol Hvišč · Sellect Consulting · <a href="https://www.sellectconsulting.com">sellectconsulting.com</a></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const sk = new Intl.NumberFormat('sk-SK', { maximumFractionDigits: 0 });
+  const eurK = (v) => sk.format(Math.round(v / 1000)) + ' tis. €';
+  const eurM = (v) => new Intl.NumberFormat('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v / 1e6) + ' mil. €';
+  const pct1 = (v) => new Intl.NumberFormat('sk-SK', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v * 100) + ' %';
+  const signedPct = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + pct1(Math.abs(v));
+  window.svFmt = { eurK, eurM, pct1, signedPct };
+
+  dash.calc('kpi', {
+    inputs: ['mesacne'],
+    title: 'Ukazovatele za január–september',
+    description: 'Súčty za 9 mesiacov z mesačných dát, odchýlka od plánu, marža a zmena hotovosti oproti augustu.',
+    fn: (mesacne) => {
+      const sum = (k) => mesacne.reduce((a, r) => a + Number(r[k]), 0);
+      const fmtN = new Intl.NumberFormat('sk-SK', { maximumFractionDigits: 0 });
+      const fmtP = (v) => new Intl.NumberFormat('sk-SK', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(v) * 100) + ' %';
+      const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
+      const m = (v) => new Intl.NumberFormat('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v / 1e6) + ' mil. €';
+      const k = (v) => fmtN.format(Math.round(v / 1000)) + ' tis. €';
+      const t = sum('trzby'), tp = sum('trzby_plan'), e = sum('ebitda'), ep = sum('ebitda_plan'), hm = sum('hruba_marza');
+      const q3 = mesacne.filter(r => r.mesiac >= '2026-07');
+      const hmq3 = q3.reduce((a, r) => a + Number(r.hruba_marza), 0) / q3.reduce((a, r) => a + Number(r.trzby), 0);
+      const h1 = mesacne.filter(r => r.mesiac < '2026-07');
+      const hmh1 = h1.reduce((a, r) => a + Number(r.hruba_marza), 0) / h1.reduce((a, r) => a + Number(r.trzby), 0);
+      const last = mesacne[mesacne.length - 1], prev = mesacne[mesacne.length - 2];
+      const cash = Number(last.hotovost), cashChg = cash - Number(prev.hotovost);
+      const tv = t / tp - 1, ev = e / ep - 1;
+      return [{
+        trzby_ytd: t, trzby_plan_ytd: tp, trzby_vs_plan: tv,
+        ebitda_ytd: e, ebitda_plan_ytd: ep, ebitda_vs_plan: ev,
+        hm_pct: hm / t, hm_q3: hmq3, hm_h1: hmh1, hotovost: cash, hotovost_zmena: cashChg,
+        trzby_ytd_txt: m(t),
+        trzby_vs_plan_txt: sgn(tv) + fmtP(tv) + ' vs. plán',
+        ebitda_ytd_txt: k(e),
+        ebitda_vs_plan_txt: sgn(ev) + fmtP(ev) + ' vs. plán (' + k(ep) + ')',
+        ebitda_gap_txt: fmtP(ev),
+        trzby_gap_txt: fmtP(tv) + (tv < 0 ? ' pod plánom' : ' nad plánom'),
+        hm_pct_txt: fmtP(hm / t),
+        hm_q3_txt: 'Q3: ' + fmtP(hmq3) + ' (1. polrok ' + fmtP(hmh1) + ')',
+        hotovost_txt: k(cash),
+        hotovost_zmena_txt: sgn(cashChg) + k(Math.abs(cashChg)) + ' za september'
+      }];
+    }
+  });
+
+  dash.calc('cf_min', {
+    inputs: ['cashflow'],
+    title: 'Prvý týždeň pod rezervou',
+    description: 'Prvý týždeň výhľadu, v ktorom zostatok klesne pod minimálnu rezervu 200 tis. €.',
+    fn: (cashflow) => {
+      const hit = cashflow.find(r => Number(r.zostatok) < 200000) || cashflow.reduce((a, r) => Number(r.zostatok) < Number(a.zostatok) ? r : a, cashflow[0]);
+      const d = new Date(hit.tyzden + 'T00:00:00Z');
+      return [{ tyzden: hit.tyzden, zostatok: Number(hit.zostatok), tyzden_txt: d.getUTCDate() + '. ' + (d.getUTCMonth() + 1) + '. ' + d.getUTCFullYear() }];
+    }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  const { eurK, pct1, signedPct } = window.svFmt;
+  const monthLbl = ['jan', 'feb', 'mar', 'apr', 'máj', 'jún', 'júl', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const fail = (el) => { el.innerHTML = ''; const d = document.createElement('div'); d.className = 'sv-fail'; d.textContent = 'Failed to load'; el.appendChild(d); };
+
+  function tipFor(box) {
+    let t = box.querySelector('.sv-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'sv-tip'; box.appendChild(t); }
+    return t;
+  }
+  function showTip(box, tip, x, y, title, lines) {
+    tip.innerHTML = '';
+    const h = document.createElement('div'); h.className = 't'; h.textContent = title; tip.appendChild(h);
+    lines.forEach(([c, n, v]) => {
+      const l = document.createElement('div');
+      if (c) { const s = document.createElement('span'); s.className = 'sv-sw'; s.style.background = c; l.appendChild(s); }
+      l.appendChild(document.createTextNode(n + ': ' + v)); tip.appendChild(l);
+    });
+    tip.style.opacity = 1;
+    const bw = box.clientWidth, tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(bw - tw, x - tw / 2)) + 'px';
+    tip.style.top = Math.max(0, y - tip.offsetHeight - 8) + 'px';
+  }
+
+  function axisY(g, y, w, fmt) {
+    const ticks = y.ticks(4);
+    g.selectAll('line.g').data(ticks).join('line').attr('class', 'g')
+      .attr('x1', 0).attr('x2', w).attr('y1', d => y(d)).attr('y2', d => y(d))
+      .attr('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+    g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt')
+      .attr('x', -8).attr('y', d => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end')
+      .attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text(fmt);
+  }
+  function measure(svg, texts) {
+    const tmp = svg.append('text').style('font-size', 'var(--cds-font-size-caption)');
+    let m = 0; texts.forEach(s => { tmp.text(s); m = Math.max(m, tmp.node().getComputedTextLength()); });
+    tmp.remove(); return m;
+  }
+
+  function monthlyChart(el, rows, actKey, planKey, color) {
+    el.innerHTML = '';
+    const W = el.clientWidth, H = 240;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const data = rows.map(r => ({ m: r.mesiac, a: Number(r[actKey]), p: Number(r[planKey]) }));
+    const yMin = Math.min(0, d3.min(data, d => Math.min(d.a, d.p)));
+    const yMax = d3.max(data, d => Math.max(d.a, d.p)) * 1.08;
+    const y0 = d3.scaleLinear([yMin, yMax], [0, 1]).nice(4);
+    const tickFmt = (v) => new Intl.NumberFormat('sk-SK').format(Math.round(v / 1000));
+    const ml = measure(svg, y0.ticks(4).map(tickFmt)) + 12;
+    const m = { t: 10, r: 6, b: 24, l: ml };
+    const w = W - m.l - m.r, h = H - m.t - m.b;
+    const x = d3.scaleBand(data.map(d => d.m), [0, w]).padding(0.3);
+    const y = d3.scaleLinear(y0.domain(), [h, 0]);
+    const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+    axisY(g, y, w, tickFmt);
+    g.append('text').attr('x', -ml + 2).attr('y', -2).attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text('');
+    const bw = Math.min(32, x.bandwidth());
+    const off = (x.bandwidth() - bw) / 2;
+    g.selectAll('rect.b').data(data).join('rect').attr('class', 'b')
+      .attr('x', d => x(d.m) + off).attr('width', bw)
+      .attr('y', d => y(Math.max(0, d.a))).attr('height', d => Math.abs(y(d.a) - y(0)))
+      .attr('rx', 4)
+      .attr('fill', d => d.a < d.p ? 'var(--cds-chart-status-critical)' : color);
+    g.selectAll('line.p').data(data).join('line').attr('class', 'p')
+      .attr('x1', d => x(d.m) - 2).attr('x2', d => x(d.m) + x.bandwidth() + 2)
+      .attr('y1', d => y(d.p)).attr('y2', d => y(d.p))
+      .attr('stroke', 'var(--cds-chart-reference)').attr('stroke-width', 2);
+    g.append('line').attr('x1', 0).attr('x2', w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+    const step = w < 300 ? 2 : 1;
+    g.selectAll('text.x').data(data.filter((d, i) => i % step === 0)).join('text').attr('class', 'x')
+      .attr('x', d => x(d.m) + x.bandwidth() / 2).attr('y', h + 16).attr('text-anchor', 'middle')
+      .attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)')
+      .text(d => monthLbl[Number(d.m.slice(5)) - 1]);
+    const tip = tipFor(el);
+    g.selectAll('rect.hit').data(data).join('rect').attr('class', 'hit')
+      .attr('x', d => x(d.m)).attr('width', x.bandwidth()).attr('y', 0).attr('height', h).attr('fill', 'transparent')
+      .on('mousemove', (ev, d) => {
+        const diff = d.p ? d.a / d.p - 1 : 0;
+        showTip(el, tip, m.l + x(d.m) + x.bandwidth() / 2, m.t + y(Math.max(d.a, d.p)),
+          monthLbl[Number(d.m.slice(5)) - 1] + ' 2026',
+          [[d.a < d.p ? 'var(--cds-chart-status-critical)' : color, 'Skutočnosť', eurK(d.a)], [null, 'Plán', eurK(d.p)], [null, 'Odchýlka', signedPct(diff)]]);
+      })
+      .on('mouseleave', () => { tip.style.opacity = 0; });
+    svg.append('text').attr('x', 0).attr('y', 10).text('');
+  }
+
+  function cfChart(el, rows) {
+    el.innerHTML = '';
+    const W = el.clientWidth, H = 240;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const data = rows.map(r => ({ d: new Date(r.tyzden + 'T00:00:00Z'), v: Number(r.zostatok), i: Number(r.prijmy), o: Number(r.vydavky) }));
+    const limit = 200000;
+    const y0 = d3.scaleLinear([Math.min(150000, d3.min(data, d => d.v)), d3.max(data, d => d.v) * 1.08], [0, 1]).nice(4);
+    const tickFmt = (v) => new Intl.NumberFormat('sk-SK').format(Math.round(v / 1000));
+    const endLbl = eurK(data[data.length - 1].v);
+    const ml = measure(svg, y0.ticks(4).map(tickFmt)) + 12;
+    const mr = 8;
+    const m = { t: 18, r: mr, b: 24, l: ml };
+    const w = W - m.l - m.r, h = H - m.t - m.b;
+    const x = d3.scaleUtc([data[0].d, data[data.length - 1].d], [0, w]);
+    const y = d3.scaleLinear(y0.domain(), [h, 0]);
+    const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+    axisY(g, y, w, tickFmt);
+    g.append('line').attr('x1', 0).attr('x2', w).attr('y1', y(limit)).attr('y2', y(limit))
+      .attr('stroke', 'var(--cds-chart-status-critical)').attr('stroke-width', 1.5).attr('stroke-dasharray', '5 4');
+    const col = dash.colors[0];
+    g.append('path').datum(data).attr('fill', 'none').attr('stroke', col).attr('stroke-width', 2)
+      .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
+      .attr('d', d3.line().x(d => x(d.d)).y(d => y(d.v)));
+    g.selectAll('circle.lo').data(data.filter(d => d.v < limit)).join('circle').attr('class', 'lo')
+      .attr('cx', d => x(d.d)).attr('cy', d => y(d.v)).attr('r', 4).attr('fill', 'var(--cds-chart-status-critical)');
+    const fmtD = (d) => d.getUTCDate() + '. ' + (d.getUTCMonth() + 1) + '.';
+    const xt = w < 300 ? [data[0], data[6], data[12]] : data.filter((d, i) => i % 3 === 0);
+    g.selectAll('text.x').data(xt).join('text').attr('class', 'x')
+      .attr('x', d => x(d.d)).attr('y', h + 16).attr('text-anchor', (d, i, a) => i === 0 ? 'start' : (i === a.length - 1 && d === data[data.length - 1]) ? 'end' : 'middle')
+      .attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text(d => fmtD(d.d));
+    const tip = tipFor(el);
+    const dot = g.append('circle').attr('r', 4).attr('fill', col).style('opacity', 0);
+    g.append('rect').attr('width', w).attr('height', h).attr('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [mx] = d3.pointer(ev);
+        const i = d3.leastIndex(data, d => Math.abs(x(d.d) - mx));
+        const d = data[i];
+        dot.attr('cx', x(d.d)).attr('cy', y(d.v)).style('opacity', 1);
+        showTip(el, tip, m.l + x(d.d), m.t + y(d.v), 'Týždeň od ' + fmtD(d.d),
+          [[col, 'Zostatok', eurK(d.v)], [null, 'Príjmy', eurK(d.i)], [null, 'Výdavky', eurK(d.o)]]);
+      })
+      .on('mouseleave', () => { tip.style.opacity = 0; dot.style('opacity', 0); });
+    void endLbl;
+  }
+
+  function arChart(el, rows) {
+    el.innerHTML = '';
+    const data = rows.slice().sort((a, b) => Number(a.poradie) - Number(b.poradie)).map(r => ({ k: r.kategoria, v: Number(r.suma) }));
+    const W = el.clientWidth, rowH = 40, H = data.length * rowH + 8;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+    const ml = measure(svg, data.map(d => d.k)) + 12;
+    const vr = measure(svg, data.map(d => eurK(d.v))) + 10;
+    const w = Math.max(40, W - ml - vr);
+    const x = d3.scaleLinear([0, d3.max(data, d => d.v)], [0, w]);
+    const g = svg.append('g').attr('transform', `translate(${ml},4)`);
+    data.forEach((d, i) => {
+      const yy = i * rowH;
+      const late = i >= 2;
+      g.append('text').attr('x', -10).attr('y', yy + rowH / 2).attr('dy', '0.32em').attr('text-anchor', 'end')
+        .attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)').text(d.k);
+      g.append('rect').attr('x', 0).attr('y', yy + rowH / 2 - 10).attr('height', 20).attr('width', Math.max(4, x(d.v))).attr('rx', 4)
+        .attr('fill', late ? 'var(--cds-chart-status-critical)' : (i === 0 ? dash.colors[0] : 'var(--cds-chart-muted)'));
+      g.append('text').attr('x', Math.max(4, x(d.v)) + 8).attr('y', yy + rowH / 2).attr('dy', '0.32em')
+        .attr('fill', 'var(--color-fg)').style('font-size', 'var(--cds-font-size-caption)').style('font-variant-numeric', 'tabular-nums').text(eurK(d.v));
+    });
+  }
+
+  function table(el, rows) {
+    const tb = el.querySelector('tbody'); tb.innerHTML = '';
+    const maxP = d3.max(rows, r => Math.abs(Number(r.marza_pct)));
+    rows.slice().sort((a, b) => Number(b.marza_pct) - Number(a.marza_pct)).forEach(r => {
+      const tr = document.createElement('tr');
+      const p = Number(r.marza_pct);
+      if (p < 0) tr.className = 'loss';
+      const cells = [
+        [r.zakazka, ''], [r.segment, 'sv-hide-n'], [eurK(Number(r.trzby)), 'num'], [eurK(Number(r.naklady)), 'num sv-hide-n'], [eurK(Number(r.marza)), 'num']
+      ];
+      cells.forEach(([t, c]) => { const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.appendChild(td); });
+      const td = document.createElement('td'); td.className = 'num';
+      const wrap = document.createElement('div'); wrap.className = 'sv-bar';
+      const b = document.createElement('span'); b.className = 'b';
+      b.style.width = Math.max(4, Math.abs(p) / maxP * 56) + 'px';
+      b.style.background = p < 0 ? 'var(--cds-chart-status-critical)' : (p < 0.15 ? 'var(--cds-chart-muted)' : dash.colors[0]);
+      const s = document.createElement('span'); s.textContent = (p < 0 ? '−' : '') + pct1(Math.abs(p));
+      wrap.appendChild(b); wrap.appendChild(s); td.appendChild(wrap); tr.appendChild(td);
+      tb.appendChild(tr);
+    });
+  }
+
+  const setDelta = (id, good) => { const e = document.getElementById(id); e.classList.remove('sv-good', 'sv-bad'); e.classList.add(good ? 'sv-good' : 'sv-bad'); };
+
+  dash.onData(() => {
+    document.getElementById('lg-a').style.background = dash.colors[0];
+    document.getElementById('lg-b').style.background = dash.colors[1];
+
+    const kpi = dash.data('kpi');
+    const kEls = document.querySelectorAll('[data-source="kpi"]');
+    if (kpi.status === 'ok' && kpi.data.length) {
+      const k = kpi.data[0];
+      kEls.forEach(e => { e.classList.remove('dash-skeleton'); e.textContent = k[e.dataset.field]; });
+      setDelta('d-trzby', k.trzby_vs_plan >= 0);
+      setDelta('d-ebitda', k.ebitda_vs_plan >= 0);
+      setDelta('d-hm', k.hm_q3 >= k.hm_h1);
+      setDelta('d-cash', k.hotovost_zmena >= 0);
+    } else {
+      kEls.forEach(e => { e.textContent = '—'; if (kpi.status === 'loading') e.classList.add('dash-skeleton'); else e.classList.remove('dash-skeleton'); });
+    }
+
+    const cfm = dash.data('cf_min');
+    document.querySelectorAll('[data-source="cf_min"]').forEach(e => {
+      if (cfm.status === 'ok' && cfm.data.length) { e.classList.remove('dash-skeleton'); e.textContent = cfm.data[0][e.dataset.field]; }
+      else { e.textContent = '—'; if (cfm.status !== 'loading') e.classList.remove('dash-skeleton'); }
+    });
+
+    const mes = dash.data('mesacne');
+    const elT = document.getElementById('ch-trzby'), elE = document.getElementById('ch-ebitda');
+    if (mes.status === 'ok') {
+      elT.classList.remove('dash-skeleton'); elE.classList.remove('dash-skeleton');
+      monthlyChart(elT, mes.data, 'trzby', 'trzby_plan', dash.colors[0]);
+      monthlyChart(elE, mes.data, 'ebitda', 'ebitda_plan', dash.colors[1]);
+    } else if (mes.status === 'loading') { elT.innerHTML = ''; elE.innerHTML = ''; }
+    else { elT.classList.remove('dash-skeleton'); elE.classList.remove('dash-skeleton'); fail(elT); fail(elE); }
+
+    const cf = dash.data('cashflow'), elC = document.getElementById('ch-cf');
+    if (cf.status === 'ok') { elC.classList.remove('dash-skeleton'); cfChart(elC, cf.data); }
+    else if (cf.status === 'loading') elC.innerHTML = '';
+    else { elC.classList.remove('dash-skeleton'); fail(elC); }
+
+    const ar = dash.data('pohladavky'), elA = document.getElementById('ch-ar');
+    if (ar.status === 'ok') { elA.classList.remove('dash-skeleton'); arChart(elA, ar.data); }
+    else if (ar.status === 'loading') elA.innerHTML = '';
+    else { elA.classList.remove('dash-skeleton'); fail(elA); }
+
+    const zk = dash.data('zakazky'), elZ = document.getElementById('tb-zak');
+    if (zk.status === 'ok') table(elZ, zk.data);
+    else elZ.querySelector('tbody').innerHTML = '';
+  });
+})();
+</script>
+
+</div></body></html>
